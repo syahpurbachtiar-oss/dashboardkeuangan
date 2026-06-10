@@ -11,152 +11,283 @@
 <body class="bg-gray-100 font-sans text-gray-800">
 
     <div class="flex h-screen overflow-hidden">
-        <!-- Sidebar -->
         <aside class="w-64 bg-slate-900 text-white hidden md:flex flex-col">
             <div class="p-6 text-2xl font-bold border-b border-slate-800">
                 <i class="fa-solid fa-wallet text-blue-400 mr-2"></i>FinDash
             </div>
             <nav class="flex-1 p-4 space-y-2">
-                <a href="#" class="block p-3 bg-blue-600 rounded-lg transition"><i class="fa-solid fa-chart-pie mr-3"></i>Global Overview</a>
-                <a href="#" class="block p-3 hover:bg-slate-800 rounded-lg transition"><i class="fa-solid fa-money-bill-transfer mr-3"></i>Cash Flow</a>
+                <a href="#" id="nav-overview" onclick="switchTab('overview')" class="block p-3 bg-blue-600 text-white rounded-lg transition"><i class="fa-solid fa-chart-pie mr-3"></i>Global Overview</a>
+                <a href="#" id="nav-cashflow" onclick="switchTab('cashflow')" class="block p-3 hover:bg-slate-800 text-gray-300 rounded-lg transition"><i class="fa-solid fa-money-bill-transfer mr-3"></i>Cash Flow</a>
             </nav>
         </aside>
 
-        <!-- Main Content -->
         <main class="flex-1 overflow-y-auto p-4 md:p-8">
-            <header class="flex justify-between items-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-800">Global Overview</h1>
-                <div class="flex items-center space-x-4">
-                    <!-- ID ditambahkan di sini agar bisa diubah via Javascript -->
-                    <span id="net-worth-display" class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-semibold">Net Worth: Menghitung...</span>
-                </div>
-            </header>
+            
+            <div id="overview-section">
+                <header class="flex justify-between items-center mb-8">
+                    <h1 class="text-3xl font-bold text-gray-800">Global Overview</h1>
+                    <div class="flex items-center space-x-4">
+                        <span id="net-worth-display" class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-semibold">Net Worth: Menghitung...</span>
+                    </div>
+                </header>
 
-            <!-- Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 class="text-gray-500 text-sm font-medium">Total Pemasukan</h3>
-                    <!-- ID ditambahkan di sini -->
-                    <p id="income-display" class="text-2xl font-bold text-green-600 mt-2">Rp 0</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-gray-500 text-sm font-medium">Total Pemasukan</h3>
+                        <p id="income-display" class="text-2xl font-bold text-green-600 mt-2">Rp 0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-gray-500 text-sm font-medium">Total Pengeluaran</h3>
+                        <p id="expense-display" class="text-2xl font-bold text-red-500 mt-2">Rp 0</p>
+                    </div>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 class="text-gray-500 text-sm font-medium">Total Pengeluaran</h3>
-                    <!-- ID ditambahkan di sini -->
-                    <p id="expense-display" class="text-2xl font-bold text-red-500 mt-2">Rp 0</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h2 class="text-xl font-bold mb-4">Catat Transaksi Baru</h2>
+                        <form id="transaction-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Tipe</label>
+                                <select name="type" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required>
+                                    <option value="Income">Pemasukan</option>
+                                    <option value="Expense">Pengeluaran</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Deskripsi</label>
+                                <input type="text" name="category" placeholder="Contoh: Gaji, Makanan..." class="mt-1 w-full p-2 border border-gray-300 rounded-md" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Jumlah (Rp)</label>
+                                <input type="number" name="amount" placeholder="50000" class="mt-1 w-full p-2 border border-gray-300 rounded-md" required>
+                            </div>
+                            <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 transition">
+                                Simpan
+                            </button>
+                        </form>
+                        <p id="success-msg" class="text-green-600 text-sm mt-3 hidden font-medium"><i class="fa-solid fa-check-circle mr-1"></i> Data berhasil disimpan!</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h2 class="text-xl font-bold mb-4">Rasio Pemasukan vs Pengeluaran</h2>
+                        <div class="relative h-64 w-full">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Form Input Data -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h2 class="text-xl font-bold mb-4">Catat Transaksi Baru</h2>
-                    <form id="transaction-form" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Tipe</label>
-                            <select name="type" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required>
-                                <option value="Income">Pemasukan</option>
-                                <option value="Expense">Pengeluaran</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Kategori</label>
-                            <input type="text" name="category" placeholder="Contoh: Gaji, Makanan..." class="mt-1 w-full p-2 border border-gray-300 rounded-md" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Jumlah (Rp)</label>
-                            <input type="number" name="amount" placeholder="50000" class="mt-1 w-full p-2 border border-gray-300 rounded-md" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Deskripsi</label>
-                            <input type="text" name="description" placeholder="Keterangan..." class="mt-1 w-full p-2 border border-gray-300 rounded-md">
-                        </div>
-                        <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 transition">
-                            Simpan ke Spreadsheet
-                        </button>
-                    </form>
-                    <p id="success-msg" class="text-green-600 text-sm mt-3 hidden font-medium"><i class="fa-solid fa-check-circle mr-1"></i> Data berhasil disimpan!</p>
+            <div id="cashflow-section" class="hidden">
+                <header class="mb-8">
+                    <h1 class="text-3xl font-bold text-gray-800">Detail Cash Flow</h1>
+                    <p class="text-gray-500 mt-2">Analisis bulanan dan riwayat transaksi</p>
+                </header>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
+                    <h2 class="text-xl font-bold mb-4">Statistik Bulanan</h2>
+                    <div class="relative h-80 w-full">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100">
+                        <h2 class="text-xl font-bold">Riwayat Transaksi</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Waktu</th>
+                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tipe</th>
+                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Deskripsi</th>
+                                    <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Jumlah (Rp)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body" class="bg-white divide-y divide-gray-200">
+                                </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
+
         </main>
     </div>
 
-    <!-- Logika JavaScript -->
     <script>
-        // PENTING: Ganti URL di bawah dengan URL Aplikasi Web dari Apps Script Anda!
+        // PENTING: Ganti dengan URL Aplikasi Web dari Apps Script Anda!
         const scriptURL = 'https://script.google.com/macros/s/AKfycbyz2GVcj7zpDwsYuGvF-quo2tRJIMNTTrqRoZv_F5nk6IIDJV15RUfhJ7VNfgrksLYfiA/exec'; 
         
-        // Mengambil elemen HTML
+        // Element HTML
         const form = document.getElementById('transaction-form');
         const btn = document.getElementById('submit-btn');
         const msg = document.getElementById('success-msg');
         
-        const incomeDisplay = document.getElementById('income-display');
-        const expenseDisplay = document.getElementById('expense-display');
-        const netWorthDisplay = document.getElementById('net-worth-display');
+        // Variabel untuk menyimpan instance grafik agar bisa di-update
+        let pieChartInstance = null;
+        let barChartInstance = null;
 
-        // --- FUNGSI MENGAMBIL DAN MENGHITUNG DATA ---
+        // --- FUNGSI NAVIGASI TAB ---
+        function switchTab(tabId) {
+            // Sembunyikan semua section
+            document.getElementById('overview-section').classList.add('hidden');
+            document.getElementById('cashflow-section').classList.add('hidden');
+            
+            // Reset gaya tombol navigasi
+            document.getElementById('nav-overview').className = "block p-3 hover:bg-slate-800 text-gray-300 rounded-lg transition";
+            document.getElementById('nav-cashflow').className = "block p-3 hover:bg-slate-800 text-gray-300 rounded-lg transition";
+
+            // Tampilkan section yang dipilih dan beri warna aktif pada menu
+            if(tabId === 'overview') {
+                document.getElementById('overview-section').classList.remove('hidden');
+                document.getElementById('nav-overview').className = "block p-3 bg-blue-600 text-white rounded-lg transition";
+            } else if(tabId === 'cashflow') {
+                document.getElementById('cashflow-section').classList.remove('hidden');
+                document.getElementById('nav-cashflow').className = "block p-3 bg-blue-600 text-white rounded-lg transition";
+            }
+        }
+
+        // --- FUNGSI MENGAMBIL & MERENDER DATA ---
         async function fetchAndUpdateData() {
             try {
-                // Mengambil data (GET) dari Google Sheets
                 const response = await fetch(scriptURL);
                 const data = await response.json();
                 
                 let totalIncome = 0;
                 let totalExpense = 0;
+                let monthlyData = {}; // Untuk data grafik batang
+                let tableHTML = '';   // Untuk data tabel
 
-                // Mengulangi setiap baris data
-                data.forEach(item => {
-                    // Pastikan mengubah teks menjadi angka menggunakan parseFloat
+                // Proses data dari urutan paling baru (dibalik/reverse)
+                const reversedData = [...data].reverse();
+
+                reversedData.forEach(item => {
                     const amount = parseFloat(item.amount) || 0; 
                     
-                    if (item.type === 'Income') {
-                        totalIncome += amount;
-                    } else if (item.type === 'Expense') {
-                        totalExpense += amount;
+                    // 1. Hitung Total Keseluruhan
+                    if (item.type === 'Income') totalIncome += amount;
+                    if (item.type === 'Expense') totalExpense += amount;
+
+                    // 2. Kelompokkan Data Bulanan untuk Bar Chart
+                    const dateObj = new Date(item.timestamp);
+                    if(!isNaN(dateObj.getTime())) {
+                        const monthKey = dateObj.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
+                        if (!monthlyData[monthKey]) monthlyData[monthKey] = { income: 0, expense: 0 };
+                        
+                        if (item.type === 'Income') monthlyData[monthKey].income += amount;
+                        if (item.type === 'Expense') monthlyData[monthKey].expense += amount;
+                        
+                        // 3. Susun HTML untuk Tabel
+                        const formattedDate = dateObj.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit' });
+                        const typeBadge = item.type === 'Income' 
+                            ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">Pemasukan</span>' 
+                            : '<span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-bold">Pengeluaran</span>';
+                        
+                        tableHTML += `
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formattedDate}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${typeBadge}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">${item.category}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium ${item.type === 'Income' ? 'text-green-600' : 'text-red-500'}">
+                                    Rp ${amount.toLocaleString('id-ID')}
+                                </td>
+                            </tr>
+                        `;
                     }
                 });
 
                 const netWorth = totalIncome - totalExpense;
 
-                // Menempelkan angka ke layar HTML
-                // (Gunakan toLocaleString('id-ID') agar format angkanya jadi gaya Indonesia contoh: 10.000)
-                incomeDisplay.innerText = '+ Rp ' + totalIncome.toLocaleString('id-ID');
-                expenseDisplay.innerText = '- Rp ' + totalExpense.toLocaleString('id-ID');
-                netWorthDisplay.innerText = 'Net Worth: Rp ' + netWorth.toLocaleString('id-ID');
+                // Update Angka Teks
+                document.getElementById('income-display').innerText = '+ Rp ' + totalIncome.toLocaleString('id-ID');
+                document.getElementById('expense-display').innerText = '- Rp ' + totalExpense.toLocaleString('id-ID');
+                document.getElementById('net-worth-display').innerText = 'Net Worth: Rp ' + netWorth.toLocaleString('id-ID');
+                
+                // Update Tabel
+                document.getElementById('table-body').innerHTML = tableHTML;
+
+                // Render Pie Chart
+                renderPieChart(totalIncome, totalExpense);
+                
+                // Render Bar Chart
+                renderBarChart(monthlyData);
 
             } catch (error) {
                 console.error("Gagal memuat data:", error);
-                netWorthDisplay.innerText = 'Gagal memuat data';
+                document.getElementById('net-worth-display').innerText = 'Gagal memuat data';
             }
         }
 
-        // --- FUNGSI MENGIRIM DATA ---
+        // --- FUNGSI RENDER GRAFIK ---
+        function renderPieChart(income, expense) {
+            const ctx = document.getElementById('pieChart').getContext('2d');
+            if (pieChartInstance) pieChartInstance.destroy(); // Hapus grafik lama sebelum buat baru
+            
+            pieChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pemasukan', 'Pengeluaran'],
+                    datasets: [{
+                        data: [income, expense],
+                        backgroundColor: ['#10b981', '#ef4444'], // Hijau & Merah
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function renderBarChart(monthlyData) {
+            const ctx = document.getElementById('barChart').getContext('2d');
+            if (barChartInstance) barChartInstance.destroy();
+
+            // Membalikkan urutan label agar urut dari bulan terlama ke terbaru
+            const labels = Object.keys(monthlyData).reverse(); 
+            const incomeData = labels.map(month => monthlyData[month].income);
+            const expenseData = labels.map(month => monthlyData[month].expense);
+
+            barChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Pemasukan', data: incomeData, backgroundColor: '#3b82f6', borderRadius: 4 }, // Biru
+                        { label: 'Pengeluaran', data: expenseData, backgroundColor: '#f87171', borderRadius: 4 } // Merah Muda
+                    ]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        // --- FUNGSI MENGIRIM DATA (FORM SUBMIT) ---
         form.addEventListener('submit', e => {
             e.preventDefault();
             btn.innerHTML = 'Menyimpan... <i class="fa-solid fa-spinner fa-spin"></i>';
             btn.disabled = true;
 
-            // Mengirim data (POST) ke Google Sheets
             fetch(scriptURL, { method: 'POST', body: new FormData(form)})
                 .then(response => {
                     msg.classList.remove('hidden'); 
                     form.reset(); 
-                    btn.innerHTML = 'Simpan ke Spreadsheet';
+                    btn.innerHTML = 'Simpan';
                     btn.disabled = false;
                     setTimeout(() => msg.classList.add('hidden'), 3000); 
                     
-                    // SETELAH DATA BERHASIL DISIMPAN, PANGGIL FUNGSI UPDATE AGAR ANGKA DI LAYAR BERUBAH
-                    fetchAndUpdateData();
+                    fetchAndUpdateData(); // Update data otomatis setelah simpan
                 })
                 .catch(error => {
                     console.error('Error!', error.message);
                     alert('Gagal menyimpan data.');
-                    btn.innerHTML = 'Simpan ke Spreadsheet';
+                    btn.innerHTML = 'Simpan';
                     btn.disabled = false;
                 });
         });
 
-        // Panggil fungsi ini pertama kali saat halaman web baru saja dibuka
+        // Load data pertama kali
         fetchAndUpdateData();
     </script>
 </body>
