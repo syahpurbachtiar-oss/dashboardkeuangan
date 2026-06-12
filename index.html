@@ -46,28 +46,34 @@
                         <form id="transaction-form" class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Tipe</label>
-                                <select name="type" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required>
+                                <select name="type" id="form-type" class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required>
                                     <option value="Income">Pemasukan</option>
                                     <option value="Expense">Pengeluaran</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Deskripsi</label>
-                                <input type="text" name="category" placeholder="Contoh: Gaji, Makanan..." class="mt-1 w-full p-2 border border-gray-300 rounded-md" required>
+                                <input type="text" name="category" id="form-desc" placeholder="Contoh: Gaji, Makanan..." class="mt-1 w-full p-2 border border-gray-300 rounded-md" required>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Jumlah (Rp)</label>
-                                <input type="number" name="amount" placeholder="50000" class="mt-1 w-full p-2 border border-gray-300 rounded-md" required>
+                                <input type="number" name="amount" id="form-amount" placeholder="50000" class="mt-1 w-full p-2 border border-gray-300 rounded-md" required>
                             </div>
-                            <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 transition">
-                                Simpan
-                            </button>
+                            
+                            <div class="flex space-x-2 pt-2">
+                                <button type="submit" id="submit-btn" class="flex-1 bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 transition">
+                                    Simpan
+                                </button>
+                                <button type="button" id="voice-btn" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-md hover:bg-gray-300 transition" title="Catat dengan Suara">
+                                    <i class="fa-solid fa-microphone"></i>
+                                </button>
+                            </div>
                         </form>
                         <p id="success-msg" class="text-green-600 text-sm mt-3 hidden font-medium"><i class="fa-solid fa-check-circle mr-1"></i> Data berhasil disimpan!</p>
                     </div>
 
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h2 class="text-xl font-bold mb-4">Rasio Pemasukan vs Pengeluaran</h2>
+                        <h2 id="pie-title" class="text-xl font-bold mb-4">Rasio Pemasukan vs Pengeluaran</h2>
                         <div class="relative h-64 w-full">
                             <canvas id="pieChart"></canvas>
                         </div>
@@ -123,26 +129,95 @@
     </nav>
 
     <script>
-        // PENTING: Ganti dengan URL Aplikasi Web dari Apps Script Anda!
         const scriptURL = 'https://script.google.com/macros/s/AKfycbyz2GVcj7zpDwsYuGvF-quo2tRJIMNTTrqRoZv_F5nk6IIDJV15RUfhJ7VNfgrksLYfiA/exec'; 
         
         const form = document.getElementById('transaction-form');
         const btn = document.getElementById('submit-btn');
         const msg = document.getElementById('success-msg');
         
+        // Elemen Input untuk Voice Control
+        const typeInput = document.getElementById('form-type');
+        const descInput = document.getElementById('form-desc');
+        const amountInput = document.getElementById('form-amount');
+        const voiceBtn = document.getElementById('voice-btn');
+        const pieTitle = document.getElementById('pie-title');
+
         let pieChartInstance = null;
         let barChartInstance = null;
 
-        // --- FUNGSI NAVIGASI TAB ---
+        // --- 1. FITUR VOICE RECOGNITION ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'id-ID'; // Menggunakan bahasa Indonesia
+            recognition.interimResults = false;
+
+            voiceBtn.addEventListener('click', () => {
+                recognition.start();
+                // Ubah icon jadi animasi berkedip merah tanda sedang merekam
+                voiceBtn.innerHTML = '<i class="fa-solid fa-microphone fa-fade text-red-500"></i>'; 
+            });
+
+            recognition.addEventListener('result', (e) => {
+                const transcript = e.results[0][0].transcript.toLowerCase();
+                
+                // Menentukan Tipe
+                if (transcript.includes('pemasukan')) {
+                    typeInput.value = 'Income';
+                } else {
+                    typeInput.value = 'Expense'; // Default jika tidak sebut pemasukan
+                }
+
+                // Menentukan Angka (Google Web Speech biasanya sudah mengubah kata "sepuluh ribu" jadi "10000" atau "10 ribu")
+                let amount = 0;
+                const numberMatch = transcript.match(/\d+/g); 
+                if (numberMatch) {
+                    amount = parseInt(numberMatch.join(''));
+                    if (transcript.includes('ribu')) amount *= 1000;
+                    if (transcript.includes('juta')) amount *= 1000000;
+                }
+                amountInput.value = amount > 0 ? amount : '';
+
+                // Menentukan Deskripsi (Menghapus kata kunci tipe dan angka dari kalimat)
+                let desc = transcript
+                    .replace(/pemasukan|pengeluaran/gi, '') // Hapus kata tipe
+                    .replace(/[0-9]/g, '') // Hapus angka
+                    .replace(/ribu|juta|rupiah/gi, '') // Hapus satuan uang
+                    .trim();
+                
+                descInput.value = desc || 'Transaksi Suara';
+
+                // Kembalikan tombol normal
+                voiceBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+
+                // Otomatis klik tombol "Simpan" jika angka valid terdeteksi
+                if(amount > 0) {
+                    btn.click();
+                } else {
+                    alert("Sistem menangkap ucapan: '" + transcript + "'. Namun jumlah uang tidak terdeteksi. Silakan lengkapi manual lalu klik Simpan.");
+                }
+            });
+
+            recognition.addEventListener('end', () => {
+                voiceBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+            });
+            recognition.addEventListener('error', () => {
+                voiceBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                alert("Gagal mendeteksi suara. Pastikan Anda mengizinkan akses mikrofon di browser.");
+            });
+        } else {
+            // Sembunyikan tombol jika browser (seperti Firefox lama) tidak mendukung fitur suara
+            voiceBtn.style.display = 'none'; 
+        }
+
+
+        // --- 2. FUNGSI NAVIGASI TAB ---
         function switchTab(tabId) {
             document.getElementById('overview-section').classList.add('hidden');
             document.getElementById('cashflow-section').classList.add('hidden');
             
-            // Reset gaya tombol Desktop
             document.getElementById('nav-overview').className = "block p-3 hover:bg-slate-800 text-gray-300 rounded-lg transition";
             document.getElementById('nav-cashflow').className = "block p-3 hover:bg-slate-800 text-gray-300 rounded-lg transition";
-
-            // Reset gaya tombol Mobile
             document.getElementById('nav-overview-mobile').className = "flex flex-col items-center text-gray-400 transition";
             document.getElementById('nav-cashflow-mobile').className = "flex flex-col items-center text-gray-400 transition";
 
@@ -157,7 +232,8 @@
             }
         }
 
-        // --- FUNGSI MENGAMBIL & MERENDER DATA ---
+
+        // --- 3. FUNGSI MENGAMBIL & MERENDER DATA ---
         async function fetchAndUpdateData() {
             try {
                 const response = await fetch(scriptURL);
@@ -204,6 +280,17 @@
 
                 const netWorth = totalIncome - totalExpense;
 
+                // --- REVISI: UPDATE PERSENTASE JUDUL PIE CHART ---
+                const totalKeseluruhan = totalIncome + totalExpense;
+                let pctIncome = "0";
+                let pctExpense = "0";
+                
+                if (totalKeseluruhan > 0) {
+                    pctIncome = ((totalIncome / totalKeseluruhan) * 100).toFixed(1).replace('.', ',');
+                    pctExpense = ((totalExpense / totalKeseluruhan) * 100).toFixed(1).replace('.', ',');
+                }
+                pieTitle.innerText = `Pemasukan ${pctIncome} % vs Pengeluaran ${pctExpense} %`;
+
                 document.getElementById('income-display').innerText = '+ Rp ' + totalIncome.toLocaleString('id-ID');
                 document.getElementById('expense-display').innerText = '- Rp ' + totalExpense.toLocaleString('id-ID');
                 document.getElementById('net-worth-display').innerText = 'Net Worth: Rp ' + netWorth.toLocaleString('id-ID');
@@ -219,7 +306,8 @@
             }
         }
 
-        // --- FUNGSI RENDER GRAFIK ---
+
+        // --- 4. FUNGSI RENDER GRAFIK ---
         function renderPieChart(income, expense) {
             const ctx = document.getElementById('pieChart').getContext('2d');
             if (pieChartInstance) pieChartInstance.destroy(); 
@@ -263,10 +351,12 @@
             });
         }
 
+        // --- 5. FUNGSI MENGIRIM DATA ---
         form.addEventListener('submit', e => {
             e.preventDefault();
             btn.innerHTML = 'Menyimpan... <i class="fa-solid fa-spinner fa-spin"></i>';
             btn.disabled = true;
+            voiceBtn.disabled = true;
 
             fetch(scriptURL, { method: 'POST', body: new FormData(form)})
                 .then(response => {
@@ -274,6 +364,7 @@
                     form.reset(); 
                     btn.innerHTML = 'Simpan';
                     btn.disabled = false;
+                    voiceBtn.disabled = false;
                     setTimeout(() => msg.classList.add('hidden'), 3000); 
                     
                     fetchAndUpdateData(); 
@@ -283,6 +374,7 @@
                     alert('Gagal menyimpan data.');
                     btn.innerHTML = 'Simpan';
                     btn.disabled = false;
+                    voiceBtn.disabled = false;
                 });
         });
 
