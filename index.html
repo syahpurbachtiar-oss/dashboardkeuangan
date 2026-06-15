@@ -178,11 +178,13 @@
                 }
                 amountInput.value = amount > 0 ? amount : '';
 
-                // Menentukan Deskripsi (Menghapus kata kunci tipe dan angka dari kalimat)
+                // REVISI: Menentukan Deskripsi (Menghapus kata kunci tipe, angka, titik, dan "rp" dari kalimat)
                 let desc = transcript
                     .replace(/pemasukan|pengeluaran/gi, '') // Hapus kata tipe
                     .replace(/[0-9]/g, '') // Hapus angka
-                    .replace(/ribu|juta|rupiah/gi, '') // Hapus satuan uang
+                    .replace(/ribu|juta|rupiah|rp/gi, '') // Hapus satuan uang dan singkatan "rp"
+                    .replace(/\./g, '') // Hapus tanda titik (.) yang terbawa dari format angka browser
+                    .replace(/\s+/g, ' ') // Merapikan spasi yang ganda akibat kata yang dihapus
                     .trim();
                 
                 descInput.value = desc || 'Transaksi Suara';
